@@ -92,5 +92,8 @@ void writeProfile(JNIEnv* jenv, JNIContext* jniContext);
 
 KernelArg* getArgForBuffer(JNIEnv* jenv, JNIContext* jniContext, jobject buffer);
 
+ArrayBuffer* getSharedArrayBuffer(JNIEnv * jenv, cl_context context, jarray javaArray);
+void setSharedArrayBuffer(cl_context context, jarray javaArray, ArrayBuffer *arrayBuffer);
+
 
 #endif // APARAPI_H

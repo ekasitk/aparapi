@@ -53,6 +53,7 @@
 #define OpenCLKernelClass AparapiOpenCLPackage("OpenCLKernel")
 #define OpenCLPlatformClass AparapiOpenCLPackage("OpenCLPlatform")
 #define OpenCLDeviceClass AparapiDevicePackage("OpenCLDevice")
+#define OpenCLContextClass AparapiOpenCLPackage("OpenCLContext")
 #define OpenCLProgramClass AparapiOpenCLPackage("OpenCLProgram")
 #define OpenCLArgDescriptorClass AparapiOpenCLPackage("OpenCLArgDescriptor")
 #define OpenCLMemClass AparapiOpenCLPackage("OpenCLMem")

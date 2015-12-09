@@ -54,8 +54,8 @@ First consider editing the properties in build.properties
          </and>
       </condition>
 
-      <available property="linux.amd.app.sdk.exists" file="/opt/AMDAPPSDK-${amd.app.sdk.version}" type="dir"/>
-      <condition property="amd.app.sdk.dir" value="/opt/AMDAPPSDK-${amd.app.sdk.version}">
+      <available property="linux.amd.app.sdk.exists" file="/usr/local/cuda" type="dir"/>
+      <condition property="amd.app.sdk.dir" value="/usr/local/cuda">
          <and>
             <os family="unix" />
             <not>

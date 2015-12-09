@@ -2974,4 +2974,9 @@ public abstract class Kernel implements Cloneable {
       mappedMethodNamesCache.invalidate();
       openCLDelegateMethodFlags.invalidate();
    }
+
+   public long getOpenCLContextId() {
+      return prepareKernelRunner().getOpenCLContextJNI();
+   }
+
 }

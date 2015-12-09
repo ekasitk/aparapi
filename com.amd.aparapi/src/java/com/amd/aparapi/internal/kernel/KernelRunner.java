@@ -45,6 +45,7 @@ import com.amd.aparapi.internal.annotation.*;
 import com.amd.aparapi.internal.exception.*;
 import com.amd.aparapi.internal.instruction.InstructionSet.*;
 import com.amd.aparapi.internal.jni.*;
+import com.amd.aparapi.internal.opencl.OpenCLContext;
 import com.amd.aparapi.internal.model.*;
 import com.amd.aparapi.internal.util.*;
 import com.amd.aparapi.internal.writer.*;
@@ -1242,8 +1243,12 @@ public class KernelRunner extends KernelRunnerJNI{
                      // jniFlags |= (Config.enableVerboseJNIOpenCLResourceTracking ? JNI_FLAG_ENABLE_VERBOSE_JNI_OPENCL_RESOURCE_TRACKING :0);
                      // jniFlags |= (kernel.getExecutionMode().equals(Kernel.EXECUTION_MODE.GPU) ? JNI_FLAG_USE_GPU : 0);
                      // Init the device to check capabilities before emitting the
+                     OpenCLContext sharedContext = OpenCLContext.getSharedContext();
                      // code that requires the capabilities.
-                     jniContextHandle = initJNI(kernel, openCLDevice, jniFlags); // openCLDevice will not be null here
+                     if (sharedContext != null) 
+                        jniContextHandle = initJNIwithSharedContext(kernel,sharedContext.getDevice(),sharedContext.getContextId(), jniFlags);
+                     else 
+                        jniContextHandle = initJNI(kernel, openCLDevice, jniFlags); // openCLDevice will not be null here
                      _settings.profile.onEvent(ProfilingEvent.INIT_JNI);
                   } // end of synchronized! issue 68
 
@@ -1764,4 +1769,5 @@ public class KernelRunner extends KernelRunnerJNI{
                  '}';
       }
    }
+
 }

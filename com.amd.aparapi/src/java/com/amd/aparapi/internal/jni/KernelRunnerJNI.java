@@ -7,6 +7,7 @@ import com.amd.aparapi.annotation.Experimental;
 import com.amd.aparapi.device.OpenCLDevice;
 import com.amd.aparapi.internal.annotation.DocMe;
 import com.amd.aparapi.internal.annotation.UsedByJNICode;
+import com.amd.aparapi.internal.opencl.OpenCLContext;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -304,6 +305,7 @@ public abstract class KernelRunnerJNI{
     * @return
     */
    @DocMe protected native synchronized long initJNI(Kernel _kernel, OpenCLDevice _device, int _flags);
+   protected native synchronized long initJNIwithSharedContext(Kernel _kernel, OpenCLDevice _device, long contextId, int _flags);
 
    protected native int getJNI(long _jniContextHandle, Object _array);
 
@@ -324,6 +326,8 @@ public abstract class KernelRunnerJNI{
    protected native int disposeJNI(long _jniContextHandle);
 
    protected native String getExtensionsJNI(long _jniContextHandle);
+
+   public native long getOpenCLContextJNI();
 
    protected native synchronized List<ProfileInfo> getProfileInfoJNI(long _jniContextHandle);
 }

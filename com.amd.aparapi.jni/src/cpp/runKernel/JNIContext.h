@@ -39,6 +39,7 @@ public:
    FILE* profileFile;
 
    JNIContext(JNIEnv *jenv, jobject _kernelObject, jobject _openCLDeviceObject, jint _flags);
+   JNIContext(JNIEnv *jenv, jobject _kernelObject, jobject _openCLDeviceObject, jlong contextId, jint _flags);
    
    static JNIContext* getJNIContext(jlong jniContextHandle){
       return((JNIContext*)jniContextHandle);

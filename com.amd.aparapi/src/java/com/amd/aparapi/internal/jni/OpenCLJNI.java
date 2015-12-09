@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.amd.aparapi.device.OpenCLDevice;
 import com.amd.aparapi.internal.opencl.OpenCLArgDescriptor;
+import com.amd.aparapi.internal.opencl.OpenCLContext;
 import com.amd.aparapi.internal.opencl.OpenCLKernel;
 import com.amd.aparapi.internal.opencl.OpenCLMem;
 import com.amd.aparapi.internal.opencl.OpenCLPlatform;
@@ -17,7 +18,9 @@ public abstract class OpenCLJNI{
 
    protected native List<OpenCLPlatform> getPlatforms();
 
-   protected native OpenCLProgram createProgram(OpenCLDevice context, String openCLSource);
+   protected static native OpenCLContext createContext(OpenCLDevice device);
+
+   protected native OpenCLProgram createProgram(OpenCLDevice device, String openCLSource);
 
    protected native OpenCLKernel createKernelJNI(OpenCLProgram program, String kernelName, OpenCLArgDescriptor[] args);
 

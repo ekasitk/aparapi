@@ -41,6 +41,7 @@
 #define OPENCLJNI_SOURCE
 #include "OpenCLJNI.h"
 #include "OpenCLArgDescriptor.h"
+#include "OpenCLContext.h"
 #include "OpenCLKernel.h"
 #include "OpenCLMem.h"
 #include "OpenCLProgram.h"
@@ -86,6 +87,24 @@ void OpenCLRange::fill(JNIEnv *jenv, jobject rangeInstance, jint dims, size_t* o
       globalDims[i] = JNIHelper::getInstanceField<jint>(jenv, rangeInstance, globalSize(i));
    }
 }
+
+JNI_JAVA(jobject, OpenCLJNI, createContext)
+   (JNIEnv *jenv, jclass jcls, jobject deviceInstance) {
+
+      jobject platformInstance = OpenCLDevice::getPlatformInstance(jenv, deviceInstance);
+      cl_platform_id platformId = OpenCLPlatform::getPlatformId(jenv, platformInstance);
+      cl_device_id deviceId = OpenCLDevice::getDeviceId(jenv, deviceInstance);
+      cl_int status = CL_SUCCESS;
+
+      cl_context_properties cps[3] = { CL_CONTEXT_PLATFORM, (cl_context_properties)platformId, 0 };
+      cl_context_properties* cprops = (NULL == platformId) ? NULL : cps;
+      cl_context context = clCreateContext( cprops, 1, &deviceId, NULL, NULL, &status);
+
+      jstring log=NULL;
+      jobject openCLContext = OpenCLContext::create(jenv, context, deviceInstance);
+
+      return(openCLContext);
+   }
 
 JNI_JAVA(jobject, OpenCLJNI, createProgram)
    (JNIEnv *jenv, jobject jobj, jobject deviceInstance, jstring source, jstring binaryKey) {
