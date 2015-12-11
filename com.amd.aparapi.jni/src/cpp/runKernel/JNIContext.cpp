@@ -47,7 +47,7 @@ JNIContext::JNIContext(JNIEnv *jenv, jobject _kernelObject, jobject _openCLDevic
       valid(JNI_FALSE){
    if (flags&com_amd_aparapi_internal_jni_KernelRunnerJNI_JNI_FLAG_USE_ACC)
       deviceType = CL_DEVICE_TYPE_ACCELERATOR;
-   fprintf(stderr,"Create JNIContext from existing cl_context %p\n",context);
+   //fprintf(stderr,"Create JNIContext from existing cl_context %p\n",context);
    cl_int status = CL_SUCCESS;
    jobject platformInstance = OpenCLDevice::getPlatformInstance(jenv, openCLDeviceObject);
    cl_platform_id platformId = OpenCLPlatform::getPlatformId(jenv, platformInstance);

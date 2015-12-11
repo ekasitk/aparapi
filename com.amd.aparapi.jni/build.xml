@@ -515,6 +515,8 @@ First consider editing the properties in build.properties
       <delete file="ProfileInfo.o" />
       <delete file="ArrayBuffer.obj" />
       <delete file="ArrayBuffer.o" />
+      <delete file="ArrayBufferManager.obj" />
+      <delete file="ArrayBufferManager.o" />
       <delete file="AparapiBuffer.obj" />
       <delete file="AparapiBuffer.o" />
       <delete file="JNIHelper.obj" />
@@ -578,6 +580,7 @@ First consider editing the properties in build.properties
          <arg value="${basedir}/dist/libaparapi_${x86_or_x86_64}.so" />
          <arg value="src/cpp/runKernel/Aparapi.cpp" />
          <arg value="src/cpp/runKernel/ArrayBuffer.cpp" />
+         <arg value="src/cpp/runKernel/ArrayBufferManager.cpp" />
          <arg value="src/cpp/runKernel/AparapiBuffer.cpp" />
          <arg value="src/cpp/runKernel/Config.cpp" />
          <arg value="src/cpp/runKernel/JNIContext.cpp" />
@@ -620,6 +623,7 @@ First consider editing the properties in build.properties
          <arg value="${basedir}/dist/libaparapi_${x86_or_x86_64}.dylib" />
          <arg value="src/cpp/runKernel/Aparapi.cpp" />
          <arg value="src/cpp/runKernel/ArrayBuffer.cpp" />
+         <arg value="src/cpp/runKernel/ArrayBufferManager.cpp" />
          <arg value="src/cpp/runKernel/AparapiBuffer.cpp" />
          <arg value="src/cpp/runKernel/Config.cpp" />
          <arg value="src/cpp/runKernel/JNIContext.cpp" />
@@ -660,6 +664,7 @@ First consider editing the properties in build.properties
          <arg value="${basedir}/dist/libaparapi_${x86_or_x86_64}.so" />
 	 <arg value="src/cpp/runKernel/Aparapi.cpp" />
          <arg value="src/cpp/runKernel/ArrayBuffer.cpp" />
+         <arg value="src/cpp/runKernel/ArrayBufferManager.cpp" />
          <arg value="src/cpp/runKernel/AparapiBuffer.cpp" />
          <arg value="src/cpp/runKernel/Config.cpp" />
          <arg value="src/cpp/runKernel/JNIContext.cpp" />
@@ -702,6 +707,7 @@ First consider editing the properties in build.properties
          <arg value="/Isrc/cpp/invoke" />
          <arg value="src/cpp/runKernel/Aparapi.cpp" />
          <arg value="src/cpp/runKernel/ArrayBuffer.cpp" />
+         <arg value="src/cpp/runKernel/ArrayBufferManager.cpp" />
          <arg value="src/cpp/runKernel/AparapiBuffer.cpp" />
          <arg value="src/cpp/runKernel/Config.cpp" />
          <arg value="src/cpp/runKernel/JNIContext.cpp" />

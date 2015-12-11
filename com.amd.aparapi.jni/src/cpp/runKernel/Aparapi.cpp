@@ -45,12 +45,11 @@
 #include "Config.h"
 #include "ProfileInfo.h"
 #include "ArrayBuffer.h"
+#include "ArrayBufferManager.h"
 #include "AparapiBuffer.h"
 #include "CLHelper.h"
 #include "List.h"
 #include <algorithm>
-
-#include <set>
 
 static const int PASS_ID_PREPARING_EXECUTION = -2;
 static const int PASS_ID_COMPLETED_EXECUTION = -1;
@@ -462,12 +461,14 @@ void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
    cl_int status = CL_SUCCESS;
 
    jarray javaArray = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
-   fprintf(stderr,"looking for shared arrayBuffer of %s\n", arg->name);
+   //fprintf(stderr,"looking for shared arrayBuffer of %s\n", arg->name);
    ArrayBuffer *sharedArrayBuffer = getSharedArrayBuffer(jenv,jniContext->context,javaArray);
    if (sharedArrayBuffer != NULL) {
       if (sharedArrayBuffer != arg->arrayBuffer) {
          arg->arrayBuffer = sharedArrayBuffer;
-         fprintf(stderr,"reuse shared arrayBuffer for %s\n", arg->name);
+         if (config->isVerbose()) {
+            fprintf(stderr,"reuse shared arrayBuffer for %s\n", arg->name);
+         }
          // TODO: release old arrayBuffer
       }
    } else {
@@ -517,7 +518,9 @@ void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
          memList.remove((cl_mem)arg->arrayBuffer->mem, __LINE__, __FILE__);
       }
       status = clReleaseMemObject((cl_mem)arg->arrayBuffer->mem);
-      fprintf(stderr, "dispose arg %s %0lx\n", arg->name, arg->arrayBuffer->mem);
+      if (config->isVerbose()) {
+         fprintf(stderr, "dispose arg %s %0lx\n", arg->name, arg->arrayBuffer->mem);
+      }
 
       //this needs to be reported, but we can still keep going
       CLException::checkCLError(status, "clReleaseMemObject()");
@@ -813,7 +816,9 @@ void enqueueKernel(JNIContext* jniContext, Range& range, int passes, int argPos,
 	   kernelOutBytesAsInts[0] = passid;
 
 	   if (cancelCode == CANCEL_STATUS_TRUE) {
-		   fprintf(stderr, "received cancellation, aborting at pass %d\n", passid);
+                   if (config->isVerbose()) {
+    		   	fprintf(stderr, "received cancellation, aborting at pass %d\n", passid);
+                   }
 		   kernelOutBytes[0] = -1;
 		   break;
 	   }
@@ -901,7 +906,8 @@ void enqueueKernel(JNIContext* jniContext, Range& range, int passes, int argPos,
       if (status != CL_SUCCESS) {
 
          for(int i = 0; i<range.dims;i++) {
-            fprintf(stderr, "after clEnqueueNDRangeKernel, globalSize[%d] = %d, localSize[%d] = %d\n",
+            if (config->isVerbose()) 
+  	          fprintf(stderr, "after clEnqueueNDRangeKernel, globalSize[%d] = %d, localSize[%d] = %d\n",
                   i, (int)range.globalDims[i], i, (int)range.localDims[i]);
          }
          throw CLException(status, "clEnqueueNDRangeKernel()");
@@ -952,7 +958,8 @@ int getReadEvents(JNIEnv* jenv, JNIContext* jniContext) {
 
       if (arg->needToEnqueueRead()){
          if (arg->isConstant()){
-            fprintf(stderr, "reading %s\n", arg->name);
+            if (config->isVerbose()) 
+               fprintf(stderr, "reading %s\n", arg->name);
          }
          if (config->isProfilingEnabled()) {
             jniContext->readEventArgs[readEventCount] = i;
@@ -1551,40 +1558,4 @@ JNI_JAVA(jobject, KernelRunnerJNI, getProfileInfoJNI)
       }
       return returnList;
    }
-
-
-// A map to find shared arrayBuffer
-//std::map<cl_context, ArrayBufferSet> map;
-std::set<ArrayBuffer*> arrayBufferSet;
-
-/**
- * find or create the arguement that has shared arrayBuffer with other Kernels
- *
- * @param jniContext the context we're working in
- * @param javaArray The java array 
- *
- * @return the shared arrayBuffer if existed, or NULL
- *
- * TEST WITH 1D primitive array, not 1D object array
- * DO NOT CALL KERNEL.DISPOSE()
- */
-ArrayBuffer* getSharedArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaArray) {
-   ArrayBuffer *arrayBuffer = NULL;
-   if (context != NULL) {
-      std::set<ArrayBuffer *>::iterator it;
-      for (it = arrayBufferSet.begin(); it != arrayBufferSet.end(); it++) {
-         if (jenv->IsSameObject(javaArray, (*it)->javaArray)) {
-            fprintf(stderr,"get shared arrayBuffer at %p\n", (*it));
-            return (*it);
-         }
-      }
-   } 
-   return NULL;
-}
-void setSharedArrayBuffer(cl_context context, jarray javaArray, ArrayBuffer *arrayBuffer) {
-   if (context != NULL) {
-      arrayBufferSet.insert(arrayBuffer);
-      fprintf(stderr,"set shared arrayBuffer at %p\n", arrayBuffer);
-   } 
-}
 
