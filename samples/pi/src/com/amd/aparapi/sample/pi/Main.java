@@ -43,13 +43,6 @@ public class Main{
             data[gid] = ((x * x + y * y) < 1) ? 1 : 0;
          } 
       };
-      map.setExplicit(true);
-      map.execute(size);
-      // map.get(data); // no need to pull data from device mem
-
-      // host mem is changed, but not effect to the device mem
-      for (int j = 0; j < size; j++) data[j] = 2; 
-
       int numThreads = 1024;
       final int[] count = new int[numThreads];
 
@@ -64,8 +57,18 @@ public class Main{
             count[gid] = localSum;
          }
       }; 
+
+      long st = System.currentTimeMillis();
+      map.setExplicit(true);
+for (int loop=0; loop < 10; loop++) {
+      map.execute(size);
+      map.get(data); // no need to pull data from device mem
+
+      // host mem is changed, but not effect to the device mem
+      //for (int j = 0; j < size; j++) data[j] = 2; 
+
       reduce.setExplicit(true);
-      // reduce.put(data);  // already in device mem, no need to put
+      reduce.put(data);  // already in device mem, no need to put
       reduce.execute(numThreads);
       reduce.get(count);
 
@@ -74,6 +77,9 @@ public class Main{
          total += count[i];
       }
       System.out.println("Pi = " + 4*((float) total)/size);
+}
+      long et = System.currentTimeMillis();
+      System.out.println("elapse time = " + (et-st));
 //      map.dispose(); // dispose() not safe now
 //      reduce.dispose();  // dispose() not safe now
    }

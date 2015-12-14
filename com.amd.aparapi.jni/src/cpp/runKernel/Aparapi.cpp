@@ -361,7 +361,8 @@ void updateArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& argP
          if (mask & CL_MEM_READ_ONLY) strcat(arg->arrayBuffer->memSpec,"|CL_MEM_READ_ONLY");
          if (mask & CL_MEM_WRITE_ONLY) strcat(arg->arrayBuffer->memSpec,"|CL_MEM_WRITE_ONLY");
 
-         fprintf(stderr, "%s %d clCreateBuffer(context=%p, %s, size=%08lx bytes, address=%p, &status)\n", arg->name, 
+         //fprintf(stderr, "%s %d clCreateBuffer(context=%p, %s, size=%08lx bytes, address=%p, &status)\n", arg->name, 
+         fprintf(stderr, "%s %d clCreateBuffer(context=%p, %s, size=%ld bytes, address=%p, &status)\n", arg->name, 
             argIdx, jniContext->context, arg->arrayBuffer->memSpec, (unsigned long)arg->arrayBuffer->lengthInBytes, arg->arrayBuffer->addr);
       }
    
@@ -402,6 +403,8 @@ void updateBuffer(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
    else if (arg->isMutableByKernel()) mask |= CL_MEM_WRITE_ONLY;
    buffer->memMask = mask;
 
+   if (config->isVerbose()) 
+      fprintf(stderr, "%s %d clCreateBuffer(context=%p, memMask=%d, size=%ld bytes, address=%p, &status)\n", arg->name, argIdx, jniContext->context, buffer->memMask, (unsigned long)buffer->lengthInBytes, buffer->data);
    buffer->mem = clCreateBuffer(jniContext->context, buffer->memMask, 
          buffer->lengthInBytes, buffer->data, &status);
 
@@ -964,15 +967,18 @@ int getReadEvents(JNIEnv* jenv, JNIContext* jniContext) {
          if (config->isProfilingEnabled()) {
             jniContext->readEventArgs[readEventCount] = i;
          }
-         if (config->isVerbose()){
-            fprintf(stderr, "reading buffer %d %s\n", i, arg->name);
-         }
 
          if(arg->isArray()) {
+            if (config->isVerbose()){
+               fprintf(stderr, "reading buffer %d %s, len=%ld bytes\n", i, arg->name, arg->arrayBuffer->lengthInBytes);
+            }
             status = clEnqueueReadBuffer(jniContext->commandQueue, arg->arrayBuffer->mem, 
                 CL_FALSE, 0, arg->arrayBuffer->lengthInBytes, arg->arrayBuffer->addr, 1, 
                 jniContext->executeEvents, &(jniContext->readEvents[readEventCount]));
          } else if(arg->isAparapiBuffer()) {
+            if (config->isVerbose()){
+               fprintf(stderr, "reading buffer %d %s, len=%ld bytes\n", i, arg->name, arg->aparapiBuffer->lengthInBytes);
+            }
             status = clEnqueueReadBuffer(jniContext->commandQueue, arg->aparapiBuffer->mem, 
                 CL_TRUE, 0, arg->aparapiBuffer->lengthInBytes, arg->aparapiBuffer->data, 1, 
                 jniContext->executeEvents, &(jniContext->readEvents[readEventCount]));

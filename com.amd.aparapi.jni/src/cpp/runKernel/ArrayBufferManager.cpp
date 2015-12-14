@@ -26,6 +26,8 @@ ArrayBuffer* getSharedArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaA
       std::set<ArrayBuffer *> arrayBufferSet = arrayBufferMap[context]; // return existing or create an empty arrayBufferSet
       std::set<ArrayBuffer *>::iterator it;
       for (it = arrayBufferSet.begin(); it != arrayBufferSet.end(); it++) {
+         // simply checking (*it)->javaArray == javaArray won't work
+         //  as javaArray may be changed from different GetObjectField call
          if (jenv->IsSameObject(javaArray, (*it)->javaArray)) {
             if (config->isVerbose()){
                fprintf(stderr,"get shared arrayBuffer at %p from context %p\n", (*it),context);
