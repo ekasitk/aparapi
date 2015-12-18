@@ -3,6 +3,7 @@ package com.amd.aparapi.internal.kernel;
 import com.amd.aparapi.*;
 import com.amd.aparapi.device.*;
 import com.amd.aparapi.internal.util.*;
+import com.amd.aparapi.internal.opencl.*;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -19,8 +20,14 @@ public class KernelManager {
 
    private KernelPreferences defaultPreferences;
 
+   private boolean isBufferSharing = false;
+   private OpenCLContext sharedOpenCLContext; // required by buffer sharing 
+
    protected KernelManager() {
       defaultPreferences = createDefaultPreferences();
+      if (Config.enableBufferSharing) {
+         isBufferSharing = true;
+      }
    }
 
    public static KernelManager instance() {
@@ -274,6 +281,23 @@ public class KernelManager {
          }
          return profile;
       }
+   }
+
+   public boolean isBufferSharing() {
+      return isBufferSharing;
+   }
+   
+   // Do we need to synchronize 
+   public OpenCLContext getSharedOpenCLContext() {
+      return sharedOpenCLContext;
+   }
+
+   // Do we need to synchronize 
+   public void setSharedOpenCLContext(OpenCLContext context) {
+      if (sharedOpenCLContext != null) {
+         throw new RuntimeException("OpenCLContext cannot be changed in buffer sharing mode");
+      }
+      sharedOpenCLContext = context;
    }
 
    /** New home for deprecated methods of {@link Device}. */

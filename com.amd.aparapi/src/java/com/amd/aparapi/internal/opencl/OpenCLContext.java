@@ -12,7 +12,6 @@ import com.amd.aparapi.device.OpenCLDevice;
 import com.amd.aparapi.internal.jni.OpenCLJNI;
 
 public class OpenCLContext extends OpenCLJNI {
-   private static OpenCLContext sharedContext;
 
    private final long contextId;
    private final OpenCLDevice device;
@@ -40,18 +39,11 @@ public class OpenCLContext extends OpenCLJNI {
 
    @Override
    public String toString() {
-      return "OpenCLContext cl_context " + contextId + " on device " +  device;
+      return "OpenCLContext cl_context " + contextId + " on device " +  device.getShortDescription();
    }
 
-
-   public static void createSharedContext(OpenCLDevice _device) {
-      if (sharedContext != null) 
-         logger.warning("Overwrite the exising shared opencl context");
-      sharedContext = createContext(_device);
-   }
-
-   public static OpenCLContext getSharedContext() {
-      return sharedContext;
+   public static OpenCLContext createContext(OpenCLDevice _device) {
+      return createContext(_device);
    }
 
 }

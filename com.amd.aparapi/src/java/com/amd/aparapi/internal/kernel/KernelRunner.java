@@ -1221,7 +1221,13 @@ public class KernelRunner extends KernelRunnerJNI{
          _settings.profile.onStart(device);
          /* for backward compatibility reasons we still honor execution mode */
          boolean isOpenCl = requestedExecutionMode.isOpenCL() || device instanceof OpenCLDevice;
+
+         if (KernelManager.instance().isBufferSharing() && (!(device instanceof OpenCLDevice))) {
+            throw new RuntimeException("Device " + device.getShortDescription() + " not support in buffer sharing mode");
+         }
+
          if (isOpenCl) {
+            OpenCLContext sharedContext = KernelManager.instance().getSharedOpenCLContext(); 
             if ((entryPoint == null) || (isFallBack)) {
                if (entryPoint == null) {
                   try {
@@ -1243,12 +1249,17 @@ public class KernelRunner extends KernelRunnerJNI{
                      // jniFlags |= (Config.enableVerboseJNIOpenCLResourceTracking ? JNI_FLAG_ENABLE_VERBOSE_JNI_OPENCL_RESOURCE_TRACKING :0);
                      // jniFlags |= (kernel.getExecutionMode().equals(Kernel.EXECUTION_MODE.GPU) ? JNI_FLAG_USE_GPU : 0);
                      // Init the device to check capabilities before emitting the
-                     OpenCLContext sharedContext = OpenCLContext.getSharedContext();
                      // code that requires the capabilities.
-                     if (sharedContext != null) 
-                        jniContextHandle = initJNIwithSharedContext(kernel,sharedContext.getDevice(),sharedContext.getContextId(), jniFlags);
-                     else 
+                     
+                     if (KernelManager.instance().isBufferSharing() && (sharedContext != null)) {
+                        OpenCLDevice sharedDevice = sharedContext.getDevice();
+                        if (sharedDevice != openCLDevice) 
+                           throw new RuntimeException("Cannot support different devices in buffer sharing mode");
+                        logger.fine("Use shared opencl context " + sharedContext.getContextId());
+                        jniContextHandle = initJNIwithSharedContext(kernel, openCLDevice, sharedContext.getContextId(), jniFlags);
+                     } else {
                         jniContextHandle = initJNI(kernel, openCLDevice, jniFlags); // openCLDevice will not be null here
+                     }
                      _settings.profile.onEvent(ProfilingEvent.INIT_JNI);
                   } // end of synchronized! issue 68
 
@@ -1482,6 +1493,18 @@ public class KernelRunner extends KernelRunnerJNI{
                } catch (final AparapiException e) {
                   fallBackToNextDevice(_settings, e);
                }
+            }
+
+            // Now the current kernel succeeds.
+            if (KernelManager.instance().isBufferSharing()) {
+               if (sharedContext == null) {
+                  long openclContextId = getOpenCLContextIdJNI();
+                  logger.fine("Set shared OpenCL context " + openclContextId);
+                  KernelManager.instance().setSharedOpenCLContext(new OpenCLContext(openclContextId,openCLDevice));
+               }
+               LinkedHashSet<Device> preferredDevices = new LinkedHashSet<Device>();
+               preferredDevices.add(openCLDevice); // openCLDevice not null here
+               KernelManager.instance().setDefaultPreferredDevices(preferredDevices);
             }
          } else { // isOpenCL
             if (!(device instanceof JavaDevice)) {

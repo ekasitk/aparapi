@@ -156,6 +156,8 @@ public class Config extends ConfigJNI{
 
    public static final boolean enableInstructionDecodeViewer = Boolean.getBoolean(propPkgName + ".enableInstructionDecodeViewer");
 
+   public static boolean enableBufferSharing = Boolean.getBoolean(propPkgName + ".enableBufferSharing");
+
    public static String instructionListenerClassName = System.getProperty(propPkgName + ".instructionListenerClass");
 
    public static InstructionListener instructionListener = null;
@@ -210,6 +212,8 @@ public class Config extends ConfigJNI{
          System.out.println(propPkgName + ".enableVerboseJNIOpenCLResourceTracking{true|false}="
                + enableVerboseJNIOpenCLResourceTracking);
          System.out.println(propPkgName + ".enableShowGeneratedOpenCL{true|false}=" + enableShowGeneratedOpenCL);
+         System.out.println(propPkgName + ".enableExecutionModeReporting{true|false}=" + enableExecutionModeReporting);
+         System.out.println(propPkgName + ".enableBufferSharing{true|false}=" + enableBufferSharing);
          System.out.println(propPkgName + ".enableExecutionModeReporting{true|false}=" + enableExecutionModeReporting);
          System.out.println(propPkgName + ".enableInstructionDecodeViewer{true|false}=" + enableInstructionDecodeViewer);
          System.out.println(propPkgName

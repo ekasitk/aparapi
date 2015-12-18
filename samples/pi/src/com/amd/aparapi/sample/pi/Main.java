@@ -7,8 +7,6 @@ package com.amd.aparapi.sample.pi;
 import com.amd.aparapi.Kernel;
 import com.amd.aparapi.Kernel.KernelState;
 import com.amd.aparapi.Range;
-import com.amd.aparapi.device.Device;
-import com.amd.aparapi.device.OpenCLDevice;
 import com.amd.aparapi.internal.opencl.OpenCLContext;
 
 public class Main{
@@ -19,10 +17,7 @@ public class Main{
 
       final int[] data = new int[size];
 
-      Device device = Device.bestGPU();
-      System.out.println(device);
-      OpenCLContext.createSharedContext((OpenCLDevice) device); 
-      System.out.println(OpenCLContext.getSharedContext());
+      System.setProperty("com.amd.aparapi.enableBufferSharing","true");
 
       Kernel map = new Kernel() {
 
@@ -62,13 +57,13 @@ public class Main{
       map.setExplicit(true);
 for (int loop=0; loop < 10; loop++) {
       map.execute(size);
-      map.get(data); // no need to pull data from device mem
+//      map.get(data); // no need to pull data from device mem
 
       // host mem is changed, but not effect to the device mem
       //for (int j = 0; j < size; j++) data[j] = 2; 
 
       reduce.setExplicit(true);
-      reduce.put(data);  // already in device mem, no need to put
+//      reduce.put(data);  // already in device mem, no need to put
       reduce.execute(numThreads);
       reduce.get(count);
 

@@ -2976,7 +2976,7 @@ public abstract class Kernel implements Cloneable {
    }
 
    public long getOpenCLContextId() {
-      return prepareKernelRunner().getOpenCLContextJNI();
+      return prepareKernelRunner().getOpenCLContextIdJNI();
    }
 
 }

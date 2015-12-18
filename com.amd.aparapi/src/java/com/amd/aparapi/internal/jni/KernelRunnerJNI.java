@@ -327,7 +327,7 @@ public abstract class KernelRunnerJNI{
 
    protected native String getExtensionsJNI(long _jniContextHandle);
 
-   public native long getOpenCLContextJNI();
+   public native long getOpenCLContextIdJNI();
 
    protected native synchronized List<ProfileInfo> getProfileInfoJNI(long _jniContextHandle);
 }

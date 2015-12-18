@@ -1365,7 +1365,7 @@ JNI_JAVA(jstring, KernelRunnerJNI, getExtensionsJNI)
       return jextensions;
    }
 
-JNI_JAVA(jlong, KernelRunnerJNI, getOpenCLContextJNI)
+JNI_JAVA(jlong, KernelRunnerJNI, getOpenCLContextIdJNI)
    (JNIEnv *jenv, jobject jobj) {
       jlong handler = 0L;
       jfieldID fieldId = 0;
