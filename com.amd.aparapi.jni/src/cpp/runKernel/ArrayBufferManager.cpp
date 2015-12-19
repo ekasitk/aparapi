@@ -2,12 +2,8 @@
 #include "ArrayBufferManager.h"
 #include "Config.h"
 
-#include <map>
-#include <set>
-
-// A map to find shared arrayBuffer for each opencl context
-std::map<cl_context, std::set<ArrayBuffer*> > arrayBufferMap;
-
+// Initialize arrayBufferMap 
+std::map<cl_context, std::set<ArrayBuffer*> > ArrayBufferManager::arrayBufferMap;
 
 /**
  * find or create the arguement that has shared arrayBuffer with other Kernels
@@ -20,7 +16,7 @@ std::map<cl_context, std::set<ArrayBuffer*> > arrayBufferMap;
  * TEST WITH 1D primitive array, not 1D object array
  * NOT SUPPORT KERNEL.DISPOSE() GRACEFULLY
  */
-ArrayBuffer* getSharedArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaArray) {
+ArrayBuffer* ArrayBufferManager::getSharedArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaArray) {
    ArrayBuffer *arrayBuffer = NULL;
    if ((context != NULL) && (arrayBufferMap.count(context) > 0)) { 
       std::set<ArrayBuffer *> arrayBufferSet = arrayBufferMap[context]; // return existing or create an empty arrayBufferSet
@@ -39,7 +35,7 @@ ArrayBuffer* getSharedArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaA
    return NULL;
 }
 
-void setSharedArrayBuffer(cl_context context, jarray javaArray, ArrayBuffer *arrayBuffer) {
+void ArrayBufferManager::setSharedArrayBuffer(cl_context context, jarray javaArray, ArrayBuffer *arrayBuffer) {
    if (context != NULL) {
       std::set<ArrayBuffer *>& arrayBufferSet = arrayBufferMap[context]; // return existing or create an empty arrayBufferSet
       arrayBufferSet.insert(arrayBuffer);

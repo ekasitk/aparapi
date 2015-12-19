@@ -465,17 +465,17 @@ void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
 
    jarray javaArray = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
    //fprintf(stderr,"looking for shared arrayBuffer of %s\n", arg->name);
-   ArrayBuffer *sharedArrayBuffer = getSharedArrayBuffer(jenv,jniContext->context,javaArray);
+   ArrayBuffer *sharedArrayBuffer = ArrayBufferManager::getSharedArrayBuffer(jenv,jniContext->context,javaArray);
    if (sharedArrayBuffer != NULL) {
       if (sharedArrayBuffer != arg->arrayBuffer) {
          arg->arrayBuffer = sharedArrayBuffer;
-         if (config->isVerbose()) {
-            fprintf(stderr,"reuse shared arrayBuffer for %s\n", arg->name);
-         }
          // TODO: release old arrayBuffer
       }
+      if (config->isVerbose()) {
+         fprintf(stderr,"reuse shared arrayBuffer for %s\n", arg->name);
+      }
    } else {
-      setSharedArrayBuffer(jniContext->context,javaArray,arg->arrayBuffer);
+      ArrayBufferManager::setSharedArrayBuffer(jniContext->context,javaArray,arg->arrayBuffer);
    }
    
    if (config->isProfilingEnabled()){
