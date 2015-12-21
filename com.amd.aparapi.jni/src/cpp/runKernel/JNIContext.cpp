@@ -1,6 +1,7 @@
 #include "JNIContext.h"
 #include "OpenCLJNI.h"
 #include "List.h"
+#include "ArrayBufferManager.h"
 
 JNIContext::JNIContext(JNIEnv *jenv, jobject _kernelObject, jobject _openCLDeviceObject, jint _flags): 
       kernelObject(jenv->NewGlobalRef(_kernelObject)),
@@ -64,12 +65,6 @@ void JNIContext::dispose(JNIEnv *jenv, Config* config) {
    cl_int status = CL_SUCCESS;
    jenv->DeleteGlobalRef(kernelObject);
    jenv->DeleteGlobalRef(kernelClass);
-   if (context != 0){
-      status = clReleaseContext(context);
-      //fprintf(stdout, "dispose context %0lx\n", context);
-      CLException::checkCLError(status, "clReleaseContext()");
-      context = (cl_context)0;
-   }
    if (commandQueue != 0){
       if (config->isTrackingOpenCLResources()){
          commandQueueList.remove((cl_command_queue)commandQueue, __LINE__, __FILE__);
@@ -96,20 +91,7 @@ void JNIContext::dispose(JNIEnv *jenv, Config* config) {
          KernelArg *arg = args[i];
          if (!arg->isPrimitive()){
             if (arg->arrayBuffer != NULL){
-               if (arg->arrayBuffer->mem != 0){
-                  if (config->isTrackingOpenCLResources()){
-                     memList.remove((cl_mem)arg->arrayBuffer->mem, __LINE__, __FILE__);
-                  }
-                  status = clReleaseMemObject((cl_mem)arg->arrayBuffer->mem);
-                  //fprintf(stdout, "dispose arg %d %0lx\n", i, arg->arrayBuffer->mem);
-                  CLException::checkCLError(status, "clReleaseMemObject()");
-                  arg->arrayBuffer->mem = (cl_mem)0;
-               }
-               if (arg->arrayBuffer->javaArray != NULL)  {
-                  jenv->DeleteWeakGlobalRef((jweak) arg->arrayBuffer->javaArray);
-               }
-               delete arg->arrayBuffer;
-               arg->arrayBuffer = NULL;
+               ArrayBufferManager::dispose(jenv, context, arg->arrayBuffer);
             }
          }
          if (arg->name != NULL){
@@ -136,6 +118,13 @@ void JNIContext::dispose(JNIEnv *jenv, Config* config) {
          delete[] readEventArgs; readEventArgs=0;
          delete[] writeEventArgs; writeEventArgs=0;
       } 
+   }
+   if ((context != 0) && !config->isBufferSharing()) {
+      // TODO: keep tracking the reference count on context
+      status = clReleaseContext(context);
+      //fprintf(stdout, "dispose context %0lx\n", context);
+      CLException::checkCLError(status, "clReleaseContext()");
+      context = (cl_context)0;
    }
    if (config->isTrackingOpenCLResources()){
       fprintf(stderr, "after dispose{ \n");

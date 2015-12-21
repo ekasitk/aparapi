@@ -55,6 +55,7 @@ Config::Config(JNIEnv *jenv){
       enableVerboseJNIOpenCLResourceTracking = getBoolean(jenv, "enableVerboseJNIOpenCLResourceTracking");
       enableProfiling = getBoolean(jenv, "enableProfiling");
       enableProfilingCSV = getBoolean(jenv, "enableProfilingCSV");
+      enableBufferSharing = getBoolean(jenv, "enableBufferSharing");
    }
 
    //fprintf(stderr, "Config::enableVerboseJNI=%s\n",enableVerboseJNI?"true":"false");
@@ -75,4 +76,7 @@ jboolean Config::isTrackingOpenCLResources(){
 }
 jboolean Config::isProfilingEnabled(){
    return enableProfiling;
+}
+jboolean Config::isBufferSharing(){
+   return enableBufferSharing;
 }

@@ -48,4 +48,12 @@ public abstract class ConfigJNI{
    @UsedByJNICode public static final boolean enableVerboseJNIOpenCLResourceTracking = Boolean.getBoolean(propPkgName
          + ".enableVerboseJNIOpenCLResourceTracking");
 
+   /**
+    * Allows the user to share buffer between kernels
+    * 
+    * Usage -Dcom.amd.aparapi.enableBufferSharing={true|false}
+    * 
+    */
+   @UsedByJNICode public static final boolean enableBufferSharing = Boolean.getBoolean(propPkgName
+         + ".enableBufferSharing");
 }

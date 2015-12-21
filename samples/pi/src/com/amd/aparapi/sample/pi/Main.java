@@ -55,7 +55,7 @@ public class Main{
 
       long st = System.currentTimeMillis();
       map.setExplicit(true);
-for (int loop=0; loop < 10; loop++) {
+//for (int loop=0; loop < 10; loop++) {
       map.execute(size);
 //      map.get(data); // no need to pull data from device mem
 
@@ -72,11 +72,11 @@ for (int loop=0; loop < 10; loop++) {
          total += count[i];
       }
       System.out.println("Pi = " + 4*((float) total)/size);
-}
+//}
       long et = System.currentTimeMillis();
       System.out.println("elapse time = " + (et-st));
-//      map.dispose(); // dispose() not safe now
-//      reduce.dispose();  // dispose() not safe now
+      map.dispose(); 
+      reduce.dispose();  
    }
 
 }

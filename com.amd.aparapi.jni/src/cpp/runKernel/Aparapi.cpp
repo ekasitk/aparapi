@@ -259,6 +259,11 @@ jint updateNonPrimitiveReferences(JNIEnv *jenv, jobject jobj, JNIContext* jniCon
          if (!arg->isPrimitive() && !arg->isAparapiBuffer()) {
             // Following used for all primitive arrays, object arrays and nio Buffers
             jarray newRef = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
+            if (config->isBufferSharing()) {
+               arg->arrayBuffer = ArrayBufferManager::getOrCreateArrayBuffer(jenv, jniContext->context, newRef);
+            } else if (arg->arrayBuffer == NULL) { // isBufferSharing() is false
+               arg->arrayBuffer = ArrayBufferManager::getOrCreateArrayBuffer(jenv, jniContext->context, newRef);
+            }
             if (config->isVerbose()){
                fprintf(stderr, "testing for Resync javaArray %s: old=%p, new=%p\n", arg->name, arg->arrayBuffer->javaArray, newRef);         
             }
@@ -464,7 +469,8 @@ void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
    cl_int status = CL_SUCCESS;
 
    jarray javaArray = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
-   //fprintf(stderr,"looking for shared arrayBuffer of %s\n", arg->name);
+/*
+   fprintf(stderr,"looking for shared arrayBuffer of %s for javaArray %p\n", arg->name,javaArray);
    ArrayBuffer *sharedArrayBuffer = ArrayBufferManager::getSharedArrayBuffer(jenv,jniContext->context,javaArray);
    if (sharedArrayBuffer != NULL) {
       if (sharedArrayBuffer != arg->arrayBuffer) {
@@ -477,6 +483,7 @@ void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
    } else {
       ArrayBufferManager::setSharedArrayBuffer(jniContext->context,javaArray,arg->arrayBuffer);
    }
+*/
    
    if (config->isProfilingEnabled()){
       arg->arrayBuffer->read.valid = false;

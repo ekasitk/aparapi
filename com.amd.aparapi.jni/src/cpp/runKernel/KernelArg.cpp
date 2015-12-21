@@ -33,7 +33,9 @@ KernelArg::KernelArg(JNIEnv *jenv, JNIContext *jniContext, jobject argObj):
       name = strdup(nameChars);
       jenv->ReleaseStringUTFChars(nameString, nameChars);
       if (isArray()){
-         arrayBuffer = new ArrayBuffer();
+         // Construct arrayBuffer lazily during updateNonPrimitiveReferences in Aparapi.cpp
+         //arrayBuffer = new ArrayBuffer();
+         arrayBuffer = NULL;
       } else if(isAparapiBuffer()) {
          aparapiBuffer = AparapiBuffer::flatten(jenv, argObj, type);
       }

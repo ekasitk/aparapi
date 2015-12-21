@@ -47,6 +47,7 @@ class Config{
       jboolean enableVerboseJNIOpenCLResourceTracking;
       jboolean enableProfiling;
       jboolean enableProfilingCSV;
+      jboolean enableBufferSharing;
 
       jboolean getBoolean(JNIEnv *jenv, const char *fieldName);
       Config(JNIEnv *jenv);
@@ -54,6 +55,7 @@ class Config{
       jboolean isProfilingCSVEnabled();
       jboolean isTrackingOpenCLResources();
       jboolean isProfilingEnabled();
+      jboolean isBufferSharing();
 };
 
 #ifdef CONFIG_SOURCE
