@@ -37,7 +37,7 @@ KernelArg::KernelArg(JNIEnv *jenv, JNIContext *jniContext, jobject argObj):
          //arrayBuffer = new ArrayBuffer();
          arrayBuffer = NULL;
       } else if(isAparapiBuffer()) {
-         aparapiBuffer = AparapiBuffer::flatten(jenv, argObj, type);
+         aparapiBuffer = new AparapiBuffer();
       }
       //fprintf(stderr,"Associate arg %s with opencl buffer %p\n",name, arrayBuffer);
    }
