@@ -47,6 +47,7 @@
 #include "ArrayBuffer.h"
 #include "ArrayBufferManager.h"
 #include "AparapiBuffer.h"
+#include "AparapiBufferManager.h"
 #include "CLHelper.h"
 #include "List.h"
 #include <algorithm>
@@ -259,6 +260,7 @@ jint updateNonPrimitiveReferences(JNIEnv *jenv, jobject jobj, JNIContext* jniCon
          if (!arg->isPrimitive() && !arg->isAparapiBuffer()) {
             // Following used for all primitive arrays, object arrays and nio Buffers
             jarray newRef = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
+            // TODO: should we change to NewWeakGlobalRef(newRef)?
             if (config->isBufferSharing()) {
                arg->arrayBuffer = ArrayBufferManager::getOrCreateArrayBuffer(jenv, jniContext->context, newRef);
             } else if (arg->arrayBuffer == NULL) { // isBufferSharing() is false
@@ -280,6 +282,7 @@ jint updateNonPrimitiveReferences(JNIEnv *jenv, jobject jobj, JNIContext* jniCon
                   }
                }
 
+               // TODO: Is this clReleaseMemObject duplicated in updateArray()?
                // need to free opencl buffers, run will reallocate later
                if (arg->arrayBuffer->mem != 0) {
                   //fprintf(stderr, "-->releaseMemObject[%d]\n", i);
@@ -297,6 +300,7 @@ jint updateNonPrimitiveReferences(JNIEnv *jenv, jobject jobj, JNIContext* jniCon
                // Capture new array ref from the kernel arg object
 
                if (newRef != NULL) {
+                  // TODO: Why not use NewWeakGlobalRef(javaArray) above instead of reassign it here?
                   arg->arrayBuffer->javaArray = (jarray)jenv->NewWeakGlobalRef((jarray)newRef);
                   if (config->isVerbose()){
                      fprintf(stderr, "NewWeakGlobalRef for %s, set to %p\n", arg->name,
@@ -313,7 +317,56 @@ jint updateNonPrimitiveReferences(JNIEnv *jenv, jobject jobj, JNIContext* jniCon
                   fprintf(stderr, "updateNonPrimitiveReferences, args[%d].lengthInBytes=%d\n", i, arg->arrayBuffer->lengthInBytes);
                }
             } // object has changed
+
+         } else if (arg->isAparapiBuffer()) {
+            // Following used for all 2D/3D primitive arrays
+            jobject newRef = JNIHelper::getInstanceField<jobject>(jenv, arg->javaArg, "javaBuffer", ObjectClassArg);
+
+            newRef = jenv->NewWeakGlobalRef(newRef);
+            if (config->isBufferSharing()) {
+               arg->aparapiBuffer = AparapiBufferManager::getOrCreateAparapiBuffer(jenv, jniContext->context, newRef);
+            } else if (arg->aparapiBuffer == NULL) { // isBufferSharing() is false
+               arg->aparapiBuffer = AparapiBufferManager::getOrCreateAparapiBuffer(jenv, jniContext->context, newRef);
+            }
+            if (config->isVerbose()){
+               fprintf(stderr, "testing for Resync javaBuffer %s: old=%p, new=%p\n", arg->name, arg->aparapiBuffer->javaObject, newRef);
+            }
+
+            if (!jenv->IsSameObject(newRef, arg->aparapiBuffer->javaObject)) {
+               if (config->isVerbose()){
+                  fprintf(stderr, "Resync javaBuffer for %s: %p  %p\n", arg->name, newRef, arg->aparapiBuffer->javaObject);
+               }
+               // Free previous ref if any
+               if (arg->aparapiBuffer->javaObject != NULL) {
+                  jenv->DeleteWeakGlobalRef((jweak) arg->aparapiBuffer->javaObject);
+                  if (config->isVerbose()){
+                     fprintf(stderr, "DeleteWeakGlobalRef for %s: %p\n", arg->name, arg->aparapiBuffer->javaObject);
+                  }
+                 
+                  arg->aparapiBuffer->javaObject = NULL;
+               }
+
+               // TODO: Is this clReleaseMemObject duplicated in updateBuffer()?
+               // need to free opencl buffers, run will reallocate later
+               if (arg->aparapiBuffer->mem != 0) {
+                  //fprintf(stderr, "-->releaseMemObject[%d]\n", i);
+                  if (config->isTrackingOpenCLResources()){
+                     memList.remove(arg->aparapiBuffer->mem,__LINE__, __FILE__);
+                  }
+                  status = clReleaseMemObject((cl_mem)arg->aparapiBuffer->mem);
+                  //fprintf(stderr, "<--releaseMemObject[%d]\n", i);
+                  if(status != CL_SUCCESS) throw CLException(status, "clReleaseMemObject()");
+                  arg->aparapiBuffer->mem = (cl_mem)0;
+               }
+
+               arg->aparapiBuffer->deleteBuffer(arg);
+
+               arg->aparapiBuffer->javaObject = newRef;
+
+            }
+                    
          }
+
       } // for each arg
    } // if jniContext != NULL
    return(status);
@@ -402,21 +455,23 @@ void updateBuffer(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& arg
 
    AparapiBuffer* buffer = arg->aparapiBuffer;
    cl_int status = CL_SUCCESS;
-   cl_uint mask = CL_MEM_USE_HOST_PTR;
-   if (arg->isReadByKernel() && arg->isMutableByKernel()) mask |= CL_MEM_READ_WRITE;
-   else if (arg->isReadByKernel() && !arg->isMutableByKernel()) mask |= CL_MEM_READ_ONLY;
-   else if (arg->isMutableByKernel()) mask |= CL_MEM_WRITE_ONLY;
-   buffer->memMask = mask;
+   if (buffer->mem == NULL) {
+      cl_uint mask = CL_MEM_USE_HOST_PTR;
+      if (arg->isReadByKernel() && arg->isMutableByKernel()) mask |= CL_MEM_READ_WRITE;
+      else if (arg->isReadByKernel() && !arg->isMutableByKernel()) mask |= CL_MEM_READ_ONLY;
+      else if (arg->isMutableByKernel()) mask |= CL_MEM_WRITE_ONLY;
+      buffer->memMask = mask;
 
-   if (config->isVerbose()) 
-      fprintf(stderr, "%s %d clCreateBuffer(context=%p, memMask=%d, size=%ld bytes, address=%p, &status)\n", arg->name, argIdx, jniContext->context, buffer->memMask, (unsigned long)buffer->lengthInBytes, buffer->data);
-   buffer->mem = clCreateBuffer(jniContext->context, buffer->memMask, 
-         buffer->lengthInBytes, buffer->data, &status);
+      if (config->isVerbose()) 
+         fprintf(stderr, "%s %d clCreateBuffer(context=%p, memMask=%d, size=%ld bytes, address=%p, &status)\n", arg->name, argIdx, jniContext->context, buffer->memMask, (unsigned long)buffer->lengthInBytes, buffer->data);
+      buffer->mem = clCreateBuffer(jniContext->context, buffer->memMask, 
+      buffer->lengthInBytes, buffer->data, &status);
 
-   if(status != CL_SUCCESS) throw CLException(status,"clCreateBuffer");
+      if(status != CL_SUCCESS) throw CLException(status,"clCreateBuffer");
 
-   if (config->isTrackingOpenCLResources()){
-      memList.add(buffer->mem, __LINE__, __FILE__);
+      if (config->isTrackingOpenCLResources()){
+         memList.add(buffer->mem, __LINE__, __FILE__);
+      }
    }
 
    status = clSetKernelArg(jniContext->kernel, argPos, sizeof(cl_mem), (void *)&(buffer->mem));
@@ -463,27 +518,12 @@ void processObject(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& ar
     }
 }
 
-jarray x = NULL;
 void processArray(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& argPos, int argIdx) {
 
    cl_int status = CL_SUCCESS;
 
+   // TODO: not necessary because it is set in updateNonPri.. before
    jarray javaArray = (jarray)jenv->GetObjectField(arg->javaArg, KernelArg::javaArrayFieldID);
-/*
-   fprintf(stderr,"looking for shared arrayBuffer of %s for javaArray %p\n", arg->name,javaArray);
-   ArrayBuffer *sharedArrayBuffer = ArrayBufferManager::getSharedArrayBuffer(jenv,jniContext->context,javaArray);
-   if (sharedArrayBuffer != NULL) {
-      if (sharedArrayBuffer != arg->arrayBuffer) {
-         arg->arrayBuffer = sharedArrayBuffer;
-         // TODO: release old arrayBuffer
-      }
-      if (config->isVerbose()) {
-         fprintf(stderr,"reuse shared arrayBuffer for %s\n", arg->name);
-      }
-   } else {
-      ArrayBufferManager::setSharedArrayBuffer(jniContext->context,javaArray,arg->arrayBuffer);
-   }
-*/
    
    if (config->isProfilingEnabled()){
       arg->arrayBuffer->read.valid = false;
@@ -560,8 +600,53 @@ void processBuffer(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& ar
       arg->aparapiBuffer->write.valid = false;
    }
 
-   // TODO: check if the object was moved and required re-flatten
-   arg->aparapiBuffer->flatten(jenv,arg);
+   // TODO: pin javaBuffer in all dimensions for not being GC
+
+   if (config->isVerbose()){
+      if (arg->isExplicit() && arg->isExplicitWrite()){
+         fprintf(stderr, "explicit write of %s\n",  arg->name);
+      }
+   }
+
+   // TODO: Check if the object moved in deep dimensions
+   jobject prevObject = arg->aparapiBuffer->prevObject;
+   bool objectMoved = (!jenv->IsSameObject(prevObject, arg->aparapiBuffer->javaObject));
+   arg->aparapiBuffer->prevObject = arg->aparapiBuffer->javaObject;
+
+   if (arg->aparapiBuffer->mem != 0 && objectMoved) {
+      if (config->isTrackingOpenCLResources()) {
+         memList.remove((cl_mem)arg->aparapiBuffer->mem, __LINE__, __FILE__);
+      }
+      status = clReleaseMemObject((cl_mem)arg->aparapiBuffer->mem);
+      //fprintf(stdout, "dispose arg %d %0lx\n", i, arg->aparapiBuffer->mem);
+
+      //this needs to be reported, but we can still keep going
+      CLException::checkCLError(status, "clReleaseMemObject()");
+
+      arg->aparapiBuffer->mem = (cl_mem)0;
+
+      arg->aparapiBuffer->deleteBuffer(arg);
+   }
+   
+   // TODO: We currently rely on explicitly write to flatten data in host.  
+   //   We don't know if the host data content changed for the 
+   //   second or later iteration. How can we know?
+   if (jniContext->firstRun || (arg->aparapiBuffer->mem == 0) || 
+      (arg->isExplicit() && arg->isExplicitWrite())) {
+      arg->aparapiBuffer->flatten(jenv,arg);
+      if (config->isVerbose()){
+         fprintf(stderr, "javaBuffer for arg %s, lengthInBytes=%d\n", arg->name, arg->aparapiBuffer->lengthInBytes);
+      }
+      updateBuffer(jenv, jniContext, arg, argPos, argIdx);
+   
+   } else {
+      // Keep the arg position in sync if no updates were required
+      if (arg->usesArrayLength()) {
+         for (int i = 0; i < arg->aparapiBuffer->numDims; i++) {
+            argPos += 2;
+         }
+      }
+   }
 
    if (config->isVerbose()) {
       fprintf(stderr, "runKernel: Buf addr=%p, ref.mem=%p\n",
@@ -574,27 +659,6 @@ void processBuffer(JNIEnv* jenv, JNIContext* jniContext, KernelArg* arg, int& ar
       }
       fprintf(stderr, "\n" );
    }
-
-   if (config->isVerbose()){
-      if (arg->isExplicit() && arg->isExplicitWrite()){
-         fprintf(stderr, "explicit write of %s\n",  arg->name);
-      }
-   }
-
-   if (arg->aparapiBuffer->mem != 0) {
-      if (config->isTrackingOpenCLResources()) {
-         memList.remove((cl_mem)arg->aparapiBuffer->mem, __LINE__, __FILE__);
-      }
-      status = clReleaseMemObject((cl_mem)arg->aparapiBuffer->mem);
-      //fprintf(stdout, "dispose arg %d %0lx\n", i, arg->aparapiBuffer->mem);
-
-      //this needs to be reported, but we can still keep going
-      CLException::checkCLError(status, "clReleaseMemObject()");
-
-      arg->aparapiBuffer->mem = (cl_mem)0;
-   }
-
-   updateBuffer(jenv, jniContext, arg, argPos, argIdx);
 
 }
 

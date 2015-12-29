@@ -987,34 +987,50 @@ public class KernelRunner extends KernelRunnerJNI{
 
                arg.setArray(newArrayRef);
                assert arg.getArray() != null : "null array ref";
-            } else if ((arg.getType() & ARG_APARAPI_BUFFER) != 0) {
-               // TODO: check if the 2D/3D array is changed. 
-               //   can Arrays.equals help?
-               needsSync = true; // Always need syn
-               Object buffer = new Object();
-               try {
-                  buffer = arg.getField().get(kernel);
-               } catch (IllegalAccessException e) {
-                  e.printStackTrace();
-               }
-               int numDims = arg.getNumDims();
-               Object subBuffer = buffer;
-               int[] dims = new int[numDims];
-               for (int d = 0; d < numDims - 1; d++) {
-                  dims[d] = Array.getLength(subBuffer);
-                  subBuffer = Array.get(subBuffer, 0);
-               }
-               dims[numDims - 1] = Array.getLength(subBuffer);
-               arg.setDims(dims);
 
-               int primitiveSize = getPrimitiveSize(arg.getType());
-               int totalElements = 1;
-               for (int d = 0; d < numDims; d++) {
-                  totalElements *= dims[d];
+            } else if ((arg.getType() & ARG_APARAPI_BUFFER) != 0) {
+               Object newArrayRef = arg.getField().get(kernel);
+
+               if (newArrayRef == null) {
+                  throw new IllegalStateException("Cannot send null refs to kernel, reverting to java");
                }
-               arg.setJavaBuffer(buffer);
-               arg.setSizeInBytes(totalElements * primitiveSize);
-               arg.setArray(buffer);
+
+              if (newArrayRef != arg.getArray()) {
+                 // TODO: deep checking into every dimension
+                 //   can Arrays.equals help?
+                 needsSync = true;
+
+                 if (logger.isLoggable(Level.FINE)) {
+                    logger.fine("saw newArrayRef for " + arg.getName() + " = " + newArrayRef + ", sizeInBytes = "
+                           + arg.getSizeInBytes());
+                 }
+
+                 int numDims = arg.getNumDims(); // # of dimensions cannot be changed. Check during compile time?
+                 Object subBuffer = newArrayRef;
+                 int[] dims = new int[numDims];
+                 for (int d = 0; d < numDims - 1; d++) {
+                    dims[d] = Array.getLength(subBuffer);
+                    subBuffer = Array.get(subBuffer, 0);
+                 }
+                 dims[numDims - 1] = Array.getLength(subBuffer);
+                 arg.setDims(dims);
+
+                 int primitiveSize = getPrimitiveSize(arg.getType());
+                 int totalElements = 1;
+                 for (int d = 0; d < numDims; d++) {
+                    totalElements *= dims[d];
+                 }
+                 arg.setJavaBuffer(newArrayRef);
+                 arg.setSizeInBytes(totalElements * primitiveSize);
+                 arg.setArray(newArrayRef);
+              }
+
+              if (((arg.getType() & ARG_EXPLICIT) != 0) && puts.contains(newArrayRef)) {
+                 args[i].setType(args[i].getType() | ARG_EXPLICIT_WRITE);
+                 // System.out.println("detected an explicit write " + args[i].name);
+                 puts.remove(newArrayRef);
+              }
+
             }
          } catch (final IllegalArgumentException e) {
             e.printStackTrace();

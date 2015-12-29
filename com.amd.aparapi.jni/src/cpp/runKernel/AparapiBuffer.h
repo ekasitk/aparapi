@@ -70,16 +70,17 @@ private:
       return (type&com_amd_aparapi_internal_jni_KernelRunnerJNI_ARG_SHORT);
    }
 
-   void buildBuffer(void* _data, cl_uint* _dims, cl_uint _numDims, long _lengthInBytes, jobject _javaObject);
+   void buildBuffer(void* _data, cl_uint* _dims, cl_uint _numDims, long _lengthInBytes);
 
 public:
-      jobject javaObject;       // The java array that this arg is mapped to 
+      jobject javaObject;       // The java array (javaBuffer) that this arg is mapped to 
       cl_uint numDims;          // number of dimensions of the object (array lengths for ND arrays)
       cl_uint* offsets;         // offsets of the next element in ND arrays)
       cl_uint* lens;            // sizes of dimensions of the object (array lengths for ND arrays)
       jint lengthInBytes;       // bytes in the array or directBuf
       cl_mem mem;               // the opencl buffer 
       void *data;               // a copy of the object itself (this is what we pass to OpenCL)
+      jobject prevObject;       // the last javaBuffer where we saw (we should check for all dimensions. this just only check the first dimension)
       cl_uint memMask;          // the mask used for createBuffer
       ProfileInfo read;
       ProfileInfo write;

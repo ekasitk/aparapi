@@ -25,6 +25,7 @@ KernelArg::KernelArg(JNIEnv *jenv, JNIContext *jniContext, jobject argObj):
          javaArrayFieldID = JNIHelper::GetFieldID(jenv, c, "javaArray", "Ljava/lang/Object;");
          sizeInBytesFieldID = JNIHelper::GetFieldID(jenv, c, "sizeInBytes", "I");
          numElementsFieldID = JNIHelper::GetFieldID(jenv, c, "numElements", "I");
+         // TODO: should we store the NewGlobalRef(c) instead?
          argClazz  = c;
       }
       type = jenv->GetIntField(argObj, typeFieldID);
@@ -37,7 +38,8 @@ KernelArg::KernelArg(JNIEnv *jenv, JNIContext *jniContext, jobject argObj):
          //arrayBuffer = new ArrayBuffer();
          arrayBuffer = NULL;
       } else if(isAparapiBuffer()) {
-         aparapiBuffer = new AparapiBuffer();
+         // Construct aparapiBuffer lazily during updateNonPrimitiveReferences in Aparapi.cpp
+         aparapiBuffer = NULL;
       }
       //fprintf(stderr,"Associate arg %s with opencl buffer %p\n",name, arrayBuffer);
    }

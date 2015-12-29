@@ -18,10 +18,8 @@ private:
    static std::map<ArrayBuffer*, int> refCountMap;
 
 public: 
-   static ArrayBuffer* getSharedArrayBuffer(JNIEnv * jenv, cl_context context, jarray javaArray);
-   static void setSharedArrayBuffer(cl_context context, jarray javaArray, ArrayBuffer *arrayBuffer);
    static ArrayBuffer* getOrCreateArrayBuffer(JNIEnv *jenv, cl_context context, jarray javaArray);
-   static void dispose(JNIEnv *jenv, cl_context context, ArrayBuffer *arrayBuffer); 
+   static void detach(JNIEnv *jenv, cl_context context, ArrayBuffer *arrayBuffer); 
 
 };
 
